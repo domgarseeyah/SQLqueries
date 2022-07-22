@@ -11,7 +11,7 @@ BEGIN
 		
 	--make sure no characters prevent updating float fields
 		update [Temp_DW_Product_Info_HGC]
-		set [Wholesale Price] = ([Wholesale Price], ',', '')
+		set [Wholesale Price] = replace([Wholesale Price], ',', '')
 		where  [Wholesale Price] like '%,%'
 
 		update [Temp_DW_Product_Info_HGC]
@@ -27,7 +27,7 @@ BEGIN
 		where  [Min Odr Qty] like '%,%'
 
 		update [Temp_DW_Product_Info_HGC]
-		set [Average Daily Usage] = [Average Daily Usage], ',', '')
+		set [Average Daily Usage] = replace([Average Daily Usage], ',', '')
 		where  [Average Daily Usage] like '%,%'
 
 		update [Temp_DW_Product_Info_HGC]
@@ -40,7 +40,7 @@ BEGIN
 
 		update [Temp_DW_Product_Info_HGC]
 		set [QOH] = replace([QOH], ',', '')
-		where  [QOH] like '%,%'
+		where  [QOH] like '%,%';
 
 
 	--Check for self dupe in report
@@ -79,7 +79,7 @@ BEGIN
 --old parts aren't congesting the active view
 		
 			Update [DW_Product_Info_HGC] 
-			set [Active?] = 'N'
+			set [Active?] = 'N';
 			
 
 --Update Company DW_Product_Info table with active part information
@@ -107,7 +107,7 @@ BEGIN
 				and a.[CATDESC] = b.[CATDESC]
 				and a.[Product Code] = b.[Product Code]
 				and a.[Vendor Name] = b.[Vendor Name]
-				and a.[Vendor Code] = b.[Vendor Code]
+				and a.[Vendor Code] = b.[Vendor Code];
 
 
 
@@ -129,7 +129,7 @@ BEGIN
 			and temp.[Extra Chrge Desc] = main.[Extra Chrge Desc]
 			and temp.[Active?] = main.[Active?]
 			and temp.[Inventory Flag] = main.[Inventory Flag]
-			and temp.[LastUpdatedDate] = main.[LastUpdatedDate]
+			and temp.[LastUpdatedDate] = main.[LastUpdatedDate];
 
 
 
@@ -176,12 +176,14 @@ BEGIN
 			b.[Active?],
 			b.[Inventory Flag],
 			b.[LastUpdatedDate]
-			FROM  [dbo].Temp_DW_Product_Info_HGC as b 
+			FROM  [dbo].Temp_DW_Product_Info_HGC as b ;
 				
 
 --Clear temp
 
-		Delete From [Temp_DW_Product_Info_HGC]
+		Delete From [Temp_DW_Product_Info_HGC];
 	
 
 
+
+END
