@@ -1,0 +1,2 @@
+# SQLqueries
+T-SQL queries
