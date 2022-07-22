@@ -1,0 +1,144 @@
+
+   		update [Temp_DW_Product_Info_HGC]
+		set [LastUpdatedDate] = cast(getdate() as date);
+		
+	--make sure no characters prevent updating float fields
+		update [Temp_DW_Product_Info_HGC]
+		set [Wholesale Price] = replace([Wholesale Price], ',', '')
+		where  [Wholesale Price] like '%,%'
+
+		update [Temp_DW_Product_Info_HGC]
+		set [Retail Price] = replace([Retail Price], ',', '')
+		where  [Retail Price] like '%,%'
+
+		update [Temp_DW_Product_Info_HGC]
+		set [Minimum Stock] = replace([Minimum Stock], ',', '')
+		where  [Minimum Stock] like '%,%'
+
+		update [Temp_DW_Product_Info_HGC]
+		set [Maximum Stock] = replace([Maximum Stock], ',', '')
+		where  [Min Odr Qty] like '%,%'
+
+		update [Temp_DW_Product_Info_HGC]
+		set [Average Daily Usage] = replace([Average Daily Usage], ',', '')
+		where  [Average Daily Usage] like '%,%'
+
+		update [Temp_DW_Product_Info_HGC]
+		set [Extra Chrg Amt] = replace([Extra Chrg Amt], ',', '')
+		where  [Extra Chrg Amt] like '%,%'
+
+		update [Temp_DW_Product_Info_HGC]
+		set [Extra Chrge Desc] = replace([Extra Chrge Desc], ',', '')
+		where  [Extra Chrge Desc] like '%,%'
+
+		update [Temp_DW_Product_Info_HGC]
+		set [QOH] = replace([QOH], ',', '')
+		where  [QOH] like '%,%'
+
+
+	--Check for self dupe in report
+		WITH cte AS (
+			SELECT
+				[Company Code],
+				[Market],
+				[Store Number],
+				[Store Name],
+				[CATDESC],
+				[Product Code],
+				[Vendor Name],
+				[Vendor Code],
+			ROW_NUMBER() OVER (
+				PARTITION BY 
+				[Company Code],
+				[Market],
+				[Store Number],
+				[Store Name],
+				[CATDESC],
+				[Product Code],
+				[Vendor Name],
+				[Vendor Code]
+			ORDER BY 
+				[Store Number],
+				[Vendor Code]
+				) row_num
+			FROM 
+				[Temp_DW_Product_Info_HGC]
+			)
+			Delete FROM cte
+			WHERE row_num > 1;
+
+--Update Live table parts all to inactive
+--Reason: if a part is removed we wont have it in the new active report so 
+--old parts aren't congesting the active view
+		
+			Update [DW_Product_Info_HGC] 
+			set [Active?] = 'N'
+			
+
+--Update Company DW_Product_Info table with active part information
+
+			Update a   
+			Set a.[Wholesale Price] = b.[Wholesale Price]
+				, a.[Retail Price] = b.[Retail Price]
+				, a.[Minimum Stock] = b.[Minimum Stock]
+				, a.[Maximum Stock] = b.[Maximum Stock]
+				, a.[Min Odr Qty] = b.[Min Odr Qty]
+				, a.[Average Daily Usage] = b.[Average Daily Usage]
+				, a.[Extra Chrg Amt] = b.[Extra Chrg Amt] 
+				, a.[Extra Chrge Desc] = b.[Extra Chrge Desc]
+				, a.[QOH] = b.[QOH]
+				, a.[Active?] = b.[Active?]
+				, a.[Inventory Flag] = b.[Inventory Flag]
+				, a.[LastUpdatedDate] = b.[LastUpdatedDate]
+			FROM [dbo].DW_Product_Info_HGC AS a 
+			LEFT JOIN [dbo].Temp_DW_Product_Info_HGC as b 
+				on a.[Store Number] = b.[Store Number]
+				and a.[Company Code] = b.[Company Code]
+				and a.[Market] = b.[Market]
+				and a.[Store Name] = b.[Store Name]
+				and a.[CATDESC] = b.[CATDESC]
+				and a.[Product Code] = b.[Product Code]
+				and a.[Vendor Name] = b.[Vendor Name]
+				and a.[Vendor Code] = b.[Vendor Code]
+
+
+
+
+--Delete those updates from within the temp to check for new parts
+
+		Delete
+			FROM [dbo].Temp_DW_Product_Info_HGC
+			FROM [dbo].Temp_DW_Product_Info_HGC as temp
+			INNER JOIN [dbo].[DW_Product_Info_HGC] as main ON
+			temp.[Store Number] = main.[Store Number]
+			and temp.[Company Code] = main.[Company Code]
+			and temp.[Market] = main.[Market]
+			and temp.[Store Name] = main.[Store Name]
+			and temp.[CATDESC] = main.[CATDESC]
+			and temp.[Product Code] = main.[Product Code]
+			and temp.[Wholesale Price] = main.[Wholesale Price]
+			and temp.[Retail Price] = main.[Retail Price]
+			and temp.[Minimum Stock] = main.[Minimum Stock]
+			and temp.[Maximum Stock] = main.[Maximum Stock]
+			and temp.[Min Odr Qty] = main.[Min Odr Qty]
+			and temp.[Average Daily Usage] = main.[Average Daily Usage]
+			and temp.[Vendor Name] = main.[Vendor Name]
+			and temp.[Vendor Code] = main.[Vendor Code]
+			and temp.[Extra Chrg Amt] = main.[Extra Chrg Amt] 
+			and temp.[Extra Chrge Desc] = main.[Extra Chrge Desc]
+			and temp.[QOH] = main.[QOH]
+			and temp.[Active?] = main.[Active?]
+			and temp.[Inventory Flag] = main.[Inventory Flag]
+			and temp.[LastUpdatedDate] = main.[LastUpdatedDate]
+
+
+
+--Insert newactive parts info into table
+
+		Insert Into [DW_Product_Info_HGC]
+		Select * From [Temp_DW_Product_Info_HGC]
+
+--Clear temp
+
+		Delete From [Temp_DW_Product_Info_HGC]
+	
