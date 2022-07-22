@@ -1,10 +1,17 @@
+CREATE PROCEDURE [dbo].[sp_Update_Product_Info_HGC]
+	
+AS
+BEGIN
+	
+	SET NOCOUNT ON;
+	--Set Updating Date for reference
 
    		update [Temp_DW_Product_Info_HGC]
 		set [LastUpdatedDate] = cast(getdate() as date);
 		
 	--make sure no characters prevent updating float fields
 		update [Temp_DW_Product_Info_HGC]
-		set [Wholesale Price] = replace([Wholesale Price], ',', '')
+		set [Wholesale Price] = ([Wholesale Price], ',', '')
 		where  [Wholesale Price] like '%,%'
 
 		update [Temp_DW_Product_Info_HGC]
@@ -16,11 +23,11 @@
 		where  [Minimum Stock] like '%,%'
 
 		update [Temp_DW_Product_Info_HGC]
-		set [Maximum Stock] = replace([Maximum Stock], ',', '')
+		set [Maximum Stock] =replace([Maximum Stock], ',', '')
 		where  [Min Odr Qty] like '%,%'
 
 		update [Temp_DW_Product_Info_HGC]
-		set [Average Daily Usage] = replace([Average Daily Usage], ',', '')
+		set [Average Daily Usage] = [Average Daily Usage], ',', '')
 		where  [Average Daily Usage] like '%,%'
 
 		update [Temp_DW_Product_Info_HGC]
@@ -78,15 +85,16 @@
 --Update Company DW_Product_Info table with active part information
 
 			Update a   
-			Set a.[Wholesale Price] = b.[Wholesale Price]
-				, a.[Retail Price] = b.[Retail Price]
-				, a.[Minimum Stock] = b.[Minimum Stock]
-				, a.[Maximum Stock] = b.[Maximum Stock]
-				, a.[Min Odr Qty] = b.[Min Odr Qty]
-				, a.[Average Daily Usage] = b.[Average Daily Usage]
-				, a.[Extra Chrg Amt] = b.[Extra Chrg Amt] 
+			
+			Set a.[Wholesale Price] = CAST(b.[Wholesale Price] AS float)
+				, a.[Retail Price] = CAST(b.[Retail Price] AS float)
+				, a.[Minimum Stock] = TRY_CAST(b.[Minimum Stock] AS float)
+				, a.[Maximum Stock] = TRY_CAST(b.[Maximum Stock] AS float)
+				, a.[Min Odr Qty] = CAST(b.[Min Odr Qty] AS float)
+				, a.[Average Daily Usage] = CAST(b.[Average Daily Usage] AS float)
+				, a.[Extra Chrg Amt] = TRY_CAST(b.[Extra Chrg Amt] AS float)
 				, a.[Extra Chrge Desc] = b.[Extra Chrge Desc]
-				, a.[QOH] = b.[QOH]
+				, a.[QOH] = CAST(b.[QOH] AS float)
 				, a.[Active?] = b.[Active?]
 				, a.[Inventory Flag] = b.[Inventory Flag]
 				, a.[LastUpdatedDate] = b.[LastUpdatedDate]
@@ -116,17 +124,9 @@
 			and temp.[Store Name] = main.[Store Name]
 			and temp.[CATDESC] = main.[CATDESC]
 			and temp.[Product Code] = main.[Product Code]
-			and temp.[Wholesale Price] = main.[Wholesale Price]
-			and temp.[Retail Price] = main.[Retail Price]
-			and temp.[Minimum Stock] = main.[Minimum Stock]
-			and temp.[Maximum Stock] = main.[Maximum Stock]
-			and temp.[Min Odr Qty] = main.[Min Odr Qty]
-			and temp.[Average Daily Usage] = main.[Average Daily Usage]
 			and temp.[Vendor Name] = main.[Vendor Name]
 			and temp.[Vendor Code] = main.[Vendor Code]
-			and temp.[Extra Chrg Amt] = main.[Extra Chrg Amt] 
 			and temp.[Extra Chrge Desc] = main.[Extra Chrge Desc]
-			and temp.[QOH] = main.[QOH]
 			and temp.[Active?] = main.[Active?]
 			and temp.[Inventory Flag] = main.[Inventory Flag]
 			and temp.[LastUpdatedDate] = main.[LastUpdatedDate]
@@ -134,11 +134,54 @@
 
 
 --Insert newactive parts info into table
-
 		Insert Into [DW_Product_Info_HGC]
-		Select * From [Temp_DW_Product_Info_HGC]
+			([Company Code],
+			[Market],
+			[Store Number],
+			[Store Name],
+			[CATDESC],
+			[Product Code],
+			[Wholesale Price],
+			[Retail Price],
+			[Minimum Stock],
+			[Maximum Stock],
+			[Min Odr Qty],
+			[Average Daily Usage],
+			[Vendor Name],
+			[Vendor Code],
+			[Extra Chrg Amt],
+			[Extra Chrge Desc],
+			[QOH],
+			[Active?],
+			[Inventory Flag],
+			[LastUpdatedDate])
+			Select 
+			b.[Company Code],
+			b.[Market],
+			b.[Store Number],
+			b.[Store Name],
+			b.[CATDESC],
+			b.[Product Code],
+			CAST(b.[Wholesale Price] AS float),
+			CAST(b.[Retail Price] AS float),
+			TRY_CAST(b.[Minimum Stock] AS float),
+			TRY_CAST(b.[Maximum Stock] AS float),
+			CAST(b.[Min Odr Qty] AS float),
+			CAST(b.[Average Daily Usage] AS float),
+			b.[Vendor Name],
+			b.[Vendor Code],
+			TRY_CAST(b.[Extra Chrg Amt] AS float),
+			b.[Extra Chrge Desc],
+			CAST(b.[QOH] AS float),
+			b.[Active?],
+			b.[Inventory Flag],
+			b.[LastUpdatedDate]
+			FROM  [dbo].Temp_DW_Product_Info_HGC as b 
+				
 
 --Clear temp
 
 		Delete From [Temp_DW_Product_Info_HGC]
 	
+
+
